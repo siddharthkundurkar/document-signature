@@ -1,14 +1,37 @@
-import react from 'react';
-import './index.css';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
 
-function App()
-{  return (
-    <div className="App">
-      <h1 className="text-3xl font-bold underline">
-      Document Signature App
-      </h1>
-    </div>
-  )
-}
+import Home from "./pages/Home";
+import Login from "./auth/Login";
+import Register from "./auth/Register";
+import Dashboard from "./pages/Dashboard";
 
-export default App
+const App = () => {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/register"
+          element={<Register />}
+        />
+
+        <Route
+          path="/dashboard"
+          element={<Dashboard />}
+        />
+      </Routes>
+    </BrowserRouter>
+  );
+};
+
+export default App;
