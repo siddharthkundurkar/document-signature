@@ -1,12 +1,51 @@
 import { useNavigate } from "react-router-dom";
-
+import { useState } from "react";
+import { uploadDocument } from "../api/documentApi.js";
 const Dashboard = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate();           
+const [selectedFile, setSelectedFile] =
+  useState(null);
+
+const handleFileChange = (e) => {
+  setSelectedFile(
+    e.target.files[0]
+  );
+};
+
+const handleUpload = async () => {
+  if (!selectedFile) {
+    alert("Select PDF First");
+    return;
+  }
+
+  try {
+    const token =
+      localStorage.getItem("token");
+
+    const response =
+      await uploadDocument(
+        selectedFile,
+        token
+      );
+
+    console.log(response.data);
+
+    alert(
+      "Document Uploaded Successfully"
+    );
+  } catch (error) {
+    console.log(error);
+
+    alert("Upload Failed");
+  }
+};
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
   };
+
+  
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -70,9 +109,21 @@ const Dashboard = () => {
             Quick Actions
           </h3>
 
-          <button className="bg-blue-600 text-white px-5 py-2 rounded-lg">
-            Upload Document
-          </button>
+          <div className="space-y-4">
+  <input
+    type="file"
+    accept=".pdf"
+    onChange={handleFileChange}
+    className="block"
+  />
+
+  <button
+    onClick={handleUpload}
+    className="bg-blue-600 text-white px-5 py-2 rounded-lg"
+  >
+    Upload PDF
+  </button>
+</div>
         </div>
       </div>
     </div>

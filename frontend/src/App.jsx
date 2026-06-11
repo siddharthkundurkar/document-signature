@@ -8,7 +8,7 @@ import Home from "./pages/Home";
 import Login from "./auth/Login";
 import Register from "./auth/Register";
 import Dashboard from "./pages/Dashboard";
-
+import ProtectedRoute from "./ProtectedRoute";
 const App = () => {
   return (
     <BrowserRouter>
@@ -27,7 +27,11 @@ const App = () => {
 
         <Route
           path="/dashboard"
-          element={<Dashboard />}
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
         />
       </Routes>
     </BrowserRouter>
