@@ -24,3 +24,16 @@ export const uploadDocument = async (
     }
   );
 };
+
+export const getDocuments = (
+  token
+) => {
+  return API.get(
+    "/my-documents",
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+};
