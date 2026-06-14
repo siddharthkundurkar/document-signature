@@ -9,6 +9,7 @@ import Login from "./auth/Login";
 import Register from "./auth/Register";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./ProtectedRoute";
+import DocumentViewer from "./pages/DocumentViewer";
 const App = () => {
   return (
     <BrowserRouter>
@@ -33,6 +34,10 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/document/:id"
+  element={<DocumentViewer />}
+/>
       </Routes>
     </BrowserRouter>
   );

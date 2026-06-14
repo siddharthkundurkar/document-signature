@@ -37,3 +37,14 @@ export const getDocuments = (
     }
   );
 };
+
+export const getDocumentById = (
+  id,
+  token
+) => {
+  return API.get(`/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};

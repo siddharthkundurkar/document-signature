@@ -149,6 +149,7 @@ const Dashboard = () => {
             >
               Upload PDF
             </button>
+            
           </div>
         </div>
 
@@ -181,14 +182,25 @@ const Dashboard = () => {
                     </p>
                   </div>
 
-                  <a
-                    href={doc.file_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="bg-blue-600 text-white px-4 py-2 rounded"
-                  >
-                    View PDF
-                  </a>
+                  <div className="flex gap-2">
+  <a
+    href={doc.file_url}
+    target="_blank"
+    rel="noreferrer"
+    className="bg-blue-600 text-white px-4 py-2 rounded"
+  >
+    View PDF
+  </a>
+
+  <button
+    onClick={() =>
+      navigate(`/document/${doc.id}`)
+    }
+    className="bg-green-600 text-white px-4 py-2 rounded"
+  >
+    Add Signature
+  </button>
+</div>
                 </div>
               ))}
             </div>

@@ -8,7 +8,8 @@ const authMiddleware = require("../middleware/authMiddleware.js");
 
 const {
   uploadDocument,
-  getDocuments
+  getDocuments,
+  getDocumentById
 } = require("../controllers/document.controller.js");
 
 router.post(
@@ -23,4 +24,11 @@ router.get(
   authMiddleware,
   getDocuments
 );
+
+router.get(
+  "/:id",
+  authMiddleware,
+  getDocumentById
+);
+
 module.exports = router;

@@ -74,7 +74,27 @@ const getDocuments = async (req, res) => {
     });
   }
 };
+const getDocumentById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   uploadDocument,
-  getDocuments
+  getDocuments,
+  getDocumentById
 };
