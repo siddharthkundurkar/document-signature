@@ -1,16 +1,29 @@
-import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import {
+  useState,
+  useEffect,
+} from "react";
 
-import { Document, Page, pdfjs } from "react-pdf";
+import {
+  useParams,
+} from "react-router-dom";
+
+import {
+  Document,
+  Page,
+  pdfjs,
+} from "react-pdf";
+
+import {
+  DndContext,
+} from "@dnd-kit/core";
 
 import {
   getDocumentById,
 } from "../api/documentApi";
 
-import {
-  saveSignature,
-} from "../api/signatureApi";
-
+import SignaturePanel from "../components/SignaturePanel";
+import DraggableField from "../components/DraggableField";
+import SignatureModal from "../components/SignatureModal";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 
@@ -29,9 +42,14 @@ const DocumentViewer = () => {
   const [numPages, setNumPages] =
     useState(null);
 
-  const [position, setPosition] =
-    useState(null);
+  const [signatures, setSignatures] =
+    useState([]);
+const [showModal, setShowModal] =
+  useState(false);
 
+const [signatureImage,
+  setSignatureImage] =
+  useState(null);
   useEffect(() => {
     fetchDocument();
   }, []);
@@ -59,35 +77,90 @@ const DocumentViewer = () => {
     setNumPages(numPages);
   };
 
-  const handleClick = async (e) => {
-    try {
-      const rect =
-        e.currentTarget.getBoundingClientRect();
+const addSignature = (
+  type
+) => {
+  if (type === "signature") {
+    setShowModal(true);
+    return;
+  }
 
-      const x =
-        e.clientX - rect.left;
+  setSignatures((prev) => [
+    ...prev,
+    {
+      id: Date.now().toString(),
+      type,
+      x: 100,
+      y: 100,
+    },
+  ]);
+};
+const handleSignatureSave = (
+  image
+) => {
+  console.log(
+    "SIGNATURE SAVED"
+  );
+  console.log(image);
 
-      const y =
-        e.clientY - rect.top;
+  setShowModal(false);
 
-      setPosition({ x, y });
+  setSignatures((prev) => [
+    ...prev,
+    {
+      id: Date.now().toString(),
+      type: "signature",
+      image,
+      x: 100,
+      y: 100,
+    },
+  ]);
+};
+  const handleDragEnd = (
+    event
+  ) => {
+    const { active, delta } =
+      event;
 
-      const token =
-        localStorage.getItem("token");
+    setSignatures((prev) =>
+      prev.map((sig) => {
+        if (
+          sig.id === active.id
+        ) {
+          return {
+            ...sig,
+            x:
+              sig.x +
+              delta.x,
+            y:
+              sig.y +
+              delta.y,
+          };
+        }
 
-      await saveSignature(
-        id,
-        x,
-        y,
-        1,
-        token
-      );
+        return sig;
+      })
+    );
+  };
 
-      console.log(
-        "Signature Position Saved"
-      );
-    } catch (error) {
-      console.log(error);
+  const getLabel = (
+    type
+  ) => {
+    switch (type) {
+      case "signature":
+        return "✍ Signature";
+
+      case "name":
+        return "👤 Name";
+
+      case "date":
+        return "📅 Date";
+
+      case "email":
+        return "📧 Email";
+
+      default:
+        return "Field";
     }
   };
 
@@ -100,50 +173,74 @@ const DocumentViewer = () => {
   }
 
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-4">
+    <div className="bg-gray-100 min-h-screen p-6">
+      <h1 className="text-3xl font-bold mb-6">
         Document Viewer
       </h1>
 
-      <p className="mb-6 text-gray-600">
-        {documentData.file_name}
-      </p>
-
-      <div
-        onClick={handleClick}
-        className="relative bg-white p-4 rounded shadow"
-      >
-        <Document
-          file={documentData.file_url}
-          onLoadSuccess={
-            onDocumentLoadSuccess
-          }
-        >
-          {Array.from(
-            new Array(numPages || 0),
-            (_, index) => (
-              <Page
-                key={index}
-                pageNumber={index + 1}
-              />
-            )
-          )}
-        </Document>
-
-        {position && (
-          <div
-            className="absolute bg-blue-600 text-white px-3 py-1 rounded shadow"
-            style={{
-              left: position.x,
-              top: position.y,
-              transform:
-                "translate(-50%, -50%)",
-            }}
+      <div className="flex gap-6">
+        {/* PDF */}
+        <div className="flex-1 bg-white rounded-lg shadow p-4 relative overflow-auto">
+          <Document
+            file={
+              documentData.file_url
+            }
+            onLoadSuccess={
+              onDocumentLoadSuccess
+            }
           >
-            Sign Here
-          </div>
+            {Array.from(
+              new Array(
+                numPages || 0
+              ),
+              (_, index) => (
+                <Page
+                  key={index}
+                  pageNumber={
+                    index + 1
+                  }
+                />
+              )
+            )}
+          </Document>
+
+          <DndContext
+  onDragEnd={handleDragEnd}
+>
+  {signatures.map(
+    (signature) => (
+      <DraggableField
+        key={signature.id}
+        id={signature.id}
+        label={getLabel(
+          signature.type
         )}
+        image={
+          signature.image
+        }
+        x={signature.x}
+        y={signature.y}
+      />
+    )
+  )}
+</DndContext>
+        </div>
+
+        {/* Right Panel */}
+        <SignaturePanel
+          addSignature={
+            addSignature
+          }
+        />
       </div>
+      {showModal && (
+  <SignatureModal
+    onSave={handleSignatureSave}
+    onClose={() =>
+      setShowModal(false)
+    }
+  />
+)}
     </div>
   );
 };
