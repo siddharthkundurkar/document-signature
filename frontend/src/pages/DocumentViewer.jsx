@@ -24,6 +24,7 @@ import {
 import SignaturePanel from "../components/SignaturePanel";
 import DraggableField from "../components/DraggableField";
 import SignatureModal from "../components/SignatureModal";
+
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 
@@ -44,15 +45,43 @@ const DocumentViewer = () => {
 
   const [signatures, setSignatures] =
     useState([]);
-const [showModal, setShowModal] =
-  useState(false);
 
-const [signatureImage,
-  setSignatureImage] =
-  useState(null);
+  const [showModal, setShowModal] =
+    useState(false);
+const handleFinalizePdf =
+  async () => {
+    try {
+      const token =
+        localStorage.getItem(
+          "token"
+        );
+
+      for (const sig of signatures) {
+        await saveSignature(
+          id,
+          sig.x,
+          sig.y,
+          1,
+          token,
+          sig.type,
+          sig.image || null
+        );
+      }
+
+      alert(
+        "All signatures saved"
+      );
+    } catch (error) {
+      console.log(error);
+
+      alert(
+        "Failed to save signatures"
+      );
+    }
+  };
   useEffect(() => {
     fetchDocument();
-  }, []);
+  }, [id]);
 
   const fetchDocument = async () => {
     try {
@@ -77,45 +106,42 @@ const [signatureImage,
     setNumPages(numPages);
   };
 
-const addSignature = (
-  type
-) => {
-  if (type === "signature") {
-    setShowModal(true);
-    return;
-  }
+  const addSignature = (
+    type
+  ) => {
+    if (type === "signature") {
+      setShowModal(true);
+      return;
+    }
 
-  setSignatures((prev) => [
-    ...prev,
-    {
-      id: Date.now().toString(),
-      type,
-      x: 100,
-      y: 100,
-    },
-  ]);
-};
-const handleSignatureSave = (
-  image
-) => {
-  console.log(
-    "SIGNATURE SAVED"
-  );
-  console.log(image);
+    setSignatures((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        type,
+        x: 100,
+        y: 100,
+      },
+    ]);
+  };
 
-  setShowModal(false);
+  const handleSignatureSave = (
+    image
+  ) => {
+    setShowModal(false);
 
-  setSignatures((prev) => [
-    ...prev,
-    {
-      id: Date.now().toString(),
-      type: "signature",
-      image,
-      x: 100,
-      y: 100,
-    },
-  ]);
-};
+    setSignatures((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        type: "signature",
+        image,
+        x: 100,
+        y: 100,
+      },
+    ]);
+  };
+
   const handleDragEnd = (
     event
   ) => {
@@ -179,7 +205,7 @@ const handleSignatureSave = (
       </h1>
 
       <div className="flex gap-6">
-        {/* PDF */}
+        {/* PDF Viewer */}
         <div className="flex-1 bg-white rounded-lg shadow p-4 relative overflow-auto">
           <Document
             file={
@@ -199,48 +225,74 @@ const handleSignatureSave = (
                   pageNumber={
                     index + 1
                   }
+                  className="mb-4"
                 />
               )
             )}
           </Document>
 
           <DndContext
-  onDragEnd={handleDragEnd}
+            onDragEnd={
+              handleDragEnd
+            }
+          >
+            {signatures.map(
+              (
+                signature
+              ) => (
+                <DraggableField
+                  key={
+                    signature.id
+                  }
+                  id={
+                    signature.id
+                  }
+                  label={getLabel(
+                    signature.type
+                  )}
+                  image={
+                    signature.image
+                  }
+                  x={
+                    signature.x
+                  }
+                  y={
+                    signature.y
+                  }
+                />
+              )
+            )}
+          </DndContext>
+
+          <div className="mt-6">
+            <button
+  onClick={handleFinalizePdf}
+  className="bg-green-600 text-white px-5 py-2 rounded-lg"
 >
-  {signatures.map(
-    (signature) => (
-      <DraggableField
-        key={signature.id}
-        id={signature.id}
-        label={getLabel(
-          signature.type
-        )}
-        image={
-          signature.image
-        }
-        x={signature.x}
-        y={signature.y}
-      />
-    )
-  )}
-</DndContext>
+  Finalize PDF
+</button>
+          </div>
         </div>
 
-        {/* Right Panel */}
+        {/* Right Side Panel */}
         <SignaturePanel
           addSignature={
             addSignature
           }
         />
       </div>
+
+      {/* Signature Modal */}
       {showModal && (
-  <SignatureModal
-    onSave={handleSignatureSave}
-    onClose={() =>
-      setShowModal(false)
-    }
-  />
-)}
+        <SignatureModal
+          onSave={
+            handleSignatureSave
+          }
+          onClose={() =>
+            setShowModal(false)
+          }
+        />
+      )}
     </div>
   );
 };

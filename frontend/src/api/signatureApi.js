@@ -20,12 +20,14 @@ export const createSignature =
   
 
 export const saveSignature =
-  async (
+  (
     documentId,
     x,
     y,
     page,
-    token
+    token,
+    type,
+    signatureImage
   ) => {
     return API.post(
       "/save",
@@ -34,11 +36,12 @@ export const saveSignature =
         x,
         y,
         page,
+        type,
+        signatureImage,
       },
       {
         headers: {
-          Authorization:
-            `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       }
     );

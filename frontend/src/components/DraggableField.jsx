@@ -32,14 +32,14 @@ const DraggableField = ({
       {...listeners}
       {...attributes}
       style={style}
-      className="cursor-move"
+      className="cursor-move select-none"
     >
       {image ? (
-        <img
-          src={image}
-          alt="signature"
-          className="w-40"
-        />
+      <img
+  src={image}
+  alt="signature"
+  className="w-40 border bg-white p-1 rounded"
+/>
       ) : (
         <div className="bg-green-600 text-white px-3 py-2 rounded shadow">
           {label}

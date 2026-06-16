@@ -26,52 +26,68 @@ const createSignature = async (req, res) => {
 
     if (error) throw error;
 
-    res.status(201).json(data);
-  } catch (error) {
     res.status(201).json({
-  success: true,
-  signature: data[0],
-});
+      success: true,
+      signature: data[0],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 };
 
 
-const saveSignaturePosition = async (
-  req,
-  res
-) => {
-  try {
-    const {
-      documentId,
-      x,
-      y,
-      page,
-    } = req.body;
+const saveSignaturePosition =
+  async (req, res) => {
+    try {
+      const {
+        documentId,
+        x,
+        y,
+        page,
+        type,
+        signatureImage,
+      } = req.body;
 
-    const { data, error } =
-      await supabase
-        .from("signatures")
-        .insert([
-          {
-            document_id: documentId,
-            x_position: x,
-            y_position: y,
-            page_number: page,
-          },
-        ])
-        .select();
+      const { data, error } =
+        await supabase
+          .from("signatures")
+          .insert([
+            {
+              document_id:
+                documentId,
+              x_position: x,
+              y_position: y,
+              page_number:
+                page,
+              field_type:
+                type,
+              signature_image:
+                signatureImage,
+            },
+          ])
+          .select();
 
-    if (error) throw error;
+      if (error)
+        throw error;
 
-    res.status(201).json(data[0]);
-  } catch (error) {
-    res.status(201).json({
-  success: true,
-  signature: data[0],
-});
-  }
-};
+      res.status(201).json({
+        success: true,
+        signature:
+          data[0],
+      });
+    } catch (error) {
+      console.log(error);
 
+      res.status(500).json({
+        success: false,
+        error:
+          error.message,
+      });
+    }
+  };
 
  
 

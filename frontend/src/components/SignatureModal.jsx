@@ -26,7 +26,7 @@ const saveSignature = () => {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-lg">
+    <div className="bg-white p-6 rounded-lg w-[700px]">
         <h2 className="text-xl font-bold mb-4">
           Draw Signature
         </h2>
