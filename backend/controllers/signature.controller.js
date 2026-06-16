@@ -41,6 +41,9 @@ const createSignature = async (req, res) => {
 
 const saveSignaturePosition =
   async (req, res) => {
+    console.log("SAVE ROUTE HIT");
+  console.log(req.body);
+
     try {
       const {
         documentId,

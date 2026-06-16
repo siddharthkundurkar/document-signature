@@ -19,8 +19,10 @@ import {
 
 import {
   getDocumentById,
+  
 } from "../api/documentApi";
-
+import { inviteSigner } from "../api/signerApi";
+import  { saveSignature } from "../api/signatureApi";
 import SignaturePanel from "../components/SignaturePanel";
 import DraggableField from "../components/DraggableField";
 import SignatureModal from "../components/SignatureModal";
@@ -48,37 +50,8 @@ const DocumentViewer = () => {
 
   const [showModal, setShowModal] =
     useState(false);
-const handleFinalizePdf =
-  async () => {
-    try {
-      const token =
-        localStorage.getItem(
-          "token"
-        );
-
-      for (const sig of signatures) {
-        await saveSignature(
-          id,
-          sig.x,
-          sig.y,
-          1,
-          token,
-          sig.type,
-          sig.image || null
-        );
-      }
-
-      alert(
-        "All signatures saved"
-      );
-    } catch (error) {
-      console.log(error);
-
-      alert(
-        "Failed to save signatures"
-      );
-    }
-  };
+  const [email, setEmail] =
+  useState("");
   useEffect(() => {
     fetchDocument();
   }, [id]);
@@ -125,23 +98,27 @@ const handleFinalizePdf =
     ]);
   };
 
-  const handleSignatureSave = (
-    image
-  ) => {
-    setShowModal(false);
+  const handleSignatureSave = (image) => {
+  console.log("SIGNATURE RECEIVED");
+  console.log(image);
 
-    setSignatures((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        type: "signature",
-        image,
-        x: 100,
-        y: 100,
-      },
-    ]);
-  };
+  setShowModal(false);
 
+  setSignatures((prev) => [
+    ...prev,
+    {
+      id: Date.now().toString(),
+      type: "signature",
+      image,
+      x: 100,
+      y: 100,
+    },
+  ]);
+};
+useEffect(() => {
+  console.log("SIGNATURES STATE");
+  console.log(signatures);
+}, [signatures]);
   const handleDragEnd = (
     event
   ) => {
@@ -189,7 +166,68 @@ const handleFinalizePdf =
         return "Field";
     }
   };
+  const handleInviteSigner =
+  async (email) => {
+    try {
+      const token =
+        localStorage.getItem("token");
 
+      const response =
+        await inviteSigner(
+          id,
+          email,
+          token
+        );
+
+      console.log(response.data);
+
+      alert(
+        "Signer invited successfully"
+      );
+    } catch (error) {
+      console.log(error);
+
+      alert(
+        "Failed to invite signer"
+      );
+    }
+  };
+const handleFinalizePdf = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    console.log("SIGNATURES:", signatures);
+
+    for (const sig of signatures) {
+      const response = await saveSignature(
+        id,
+        sig.x,
+        sig.y,
+        1,
+        token,
+        sig.type,
+        sig.image || null
+      );
+
+      console.log("SAVE RESPONSE:", response.data);
+    }
+
+    alert("All signatures saved successfully");
+  } catch (error) {
+    console.error("SAVE ERROR:", error);
+
+    console.log(
+      "Backend Error:",
+      error.response?.data
+    );
+
+    alert(
+      error.response?.data?.error ||
+      error.message ||
+      "Failed to save signatures"
+    );
+  }
+};
   if (!documentData) {
     return (
       <div className="p-8">
@@ -266,7 +304,10 @@ const handleFinalizePdf =
 
           <div className="mt-6">
             <button
-  onClick={handleFinalizePdf}
+  onClick={() => {
+    alert("Button Clicked");
+    handleFinalizePdf();
+  }}
   className="bg-green-600 text-white px-5 py-2 rounded-lg"
 >
   Finalize PDF
@@ -275,11 +316,10 @@ const handleFinalizePdf =
         </div>
 
         {/* Right Side Panel */}
-        <SignaturePanel
-          addSignature={
-            addSignature
-          }
-        />
+    <SignaturePanel
+  addSignature={addSignature}
+  inviteSigner={handleInviteSigner}
+/>
       </div>
 
       {/* Signature Modal */}
