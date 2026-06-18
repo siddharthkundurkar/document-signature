@@ -16,10 +16,15 @@ const authMiddleware =
   require(
     "../middleware//authMiddleware.js"
   );
-
+const {
+  captureIp,
+} = require(
+  "../middleware/auditMiddleware.js"
+);
 router.post(
   "/invite",
   authMiddleware,
+  captureIp,
   inviteSigner
 );
 
@@ -29,7 +34,8 @@ router.get(
 );
 
 router.post(
-  "/complete/:token",
+  "/:token/complete",
+  captureIp,
   completeSigning
 );
 

@@ -4,6 +4,10 @@ const nodemailer = require("nodemailer");
 const supabase =
   require("../config/supabse");
 
+const {
+  generateSignedPdfInternal,
+} = require("./pdf.controller");
+
 const inviteSigner =
   async (req, res) => {
     try {
@@ -12,25 +16,46 @@ const inviteSigner =
         email,
       } = req.body;
 
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Email is required",
+        });
+      }
+
       const token =
         crypto.randomUUID();
 
-      const { data, error } =
-        await supabase
-          .from("signer_links")
-          .insert([
-            {
-              document_id:
-                documentId,
-              signer_email:
-                email,
-              token,
-            },
-          ])
-          .select();
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("signer_links")
+        .insert([
+          {
+            document_id:
+              documentId,
+            signer_email:
+              email,
+            token,
+          },
+        ])
+        .select();
 
       if (error)
         throw error;
+
+      await supabase
+        .from("documents")
+        .update({
+          status:
+            "Pending Signature",
+        })
+        .eq(
+          "id",
+          documentId
+        );
 
       const signingLink =
         `http://localhost:5173/sign/${token}`;
@@ -69,7 +94,10 @@ const inviteSigner =
         signingLink,
       });
     } catch (error) {
-      console.log(error);
+      console.log(
+        "INVITE SIGNER ERROR:",
+        error
+      );
 
       res.status(500).json({
         success: false,
@@ -78,7 +106,8 @@ const inviteSigner =
       });
     }
   };
-  const getDocumentByToken =
+
+const getDocumentByToken =
   async (req, res) => {
     try {
       const { token } =
@@ -98,6 +127,8 @@ const inviteSigner =
 
       const {
         data: document,
+        error:
+          documentError,
       } = await supabase
         .from("documents")
         .select("*")
@@ -107,12 +138,20 @@ const inviteSigner =
         )
         .single();
 
+      if (documentError)
+        throw documentError;
+
       res.json({
         success: true,
         signer,
         document,
       });
     } catch (error) {
+      console.log(
+        "GET TOKEN ERROR:",
+        error
+      );
+
       res.status(500).json({
         success: false,
         error:
@@ -120,11 +159,24 @@ const inviteSigner =
       });
     }
   };
-  const completeSigning =
+
+const completeSigning =
   async (req, res) => {
     try {
       const { token } =
         req.params;
+
+      const {
+        data: signer,
+        error,
+      } = await supabase
+        .from("signer_links")
+        .select("*")
+        .eq("token", token)
+        .single();
+
+      if (error)
+        throw error;
 
       await supabase
         .from("signer_links")
@@ -133,10 +185,60 @@ const inviteSigner =
         })
         .eq("token", token);
 
-      res.json({
+      await supabase
+        .from("documents")
+        .update({
+          status: "Completed",
+        })
+        .eq(
+          "id",
+          signer.document_id
+        );
+
+      await supabase
+        .from("audit_logs")
+        .insert([
+          {
+            document_id:
+              signer.document_id,
+            actor_email:
+              signer.signer_email,
+            action:
+              "DOCUMENT_SIGNED",
+            ip_address:
+              req.clientIp ||
+              req.ip,
+            user_agent:
+              req.headers[
+                "user-agent"
+              ],
+          },
+        ]);
+
+      console.log(
+        "Generating Signed PDF..."
+      );
+
+      const signedPdfUrl =
+        await generateSignedPdfInternal(
+          signer.document_id
+        );
+
+      console.log(
+        "Signed PDF URL:",
+        signedPdfUrl
+      );
+
+      res.status(200).json({
         success: true,
+        signedPdfUrl,
       });
     } catch (error) {
+      console.log(
+        "COMPLETE SIGN ERROR:",
+        error
+      );
+
       res.status(500).json({
         success: false,
         error:
@@ -145,7 +247,7 @@ const inviteSigner =
     }
   };
 
-  module.exports = {
+module.exports = {
   inviteSigner,
   getDocumentByToken,
   completeSigning,

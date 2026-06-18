@@ -23,6 +23,7 @@ import {
 } from "../api/documentApi";
 import { generateSignedPdf} from "../api/pdfApi";
 import { inviteSigner } from "../api/signerApi";
+import { getAuditHistory } from "../api/auditApi";
 import  { saveSignature } from "../api/signatureApi";
 import SignaturePanel from "../components/SignaturePanel";
 import DraggableField from "../components/DraggableField";
@@ -51,6 +52,8 @@ const DocumentViewer = () => {
 
   const [showModal, setShowModal] =
     useState(false);
+    const [auditLogs, setAuditLogs] =
+  useState([]);
   const [email, setEmail] =
   useState("");
   useEffect(() => {
@@ -73,7 +76,36 @@ const DocumentViewer = () => {
       console.log(error);
     }
   };
+const handleViewAudit =
+  async () => {
+    try {
+      const token =
+        localStorage.getItem(
+          "token"
+        );
 
+      const response =
+        await getAuditHistory(
+          id,
+          token
+        );
+
+      console.log(
+        "AUDIT HISTORY:",
+        response.data
+      );
+
+      setAuditLogs(
+        response.data.history
+      );
+    } catch (error) {
+      console.log(error);
+
+      alert(
+        "Failed to load audit history"
+      );
+    }
+  };
   const onDocumentLoadSuccess = ({
     numPages,
   }) => {
@@ -284,119 +316,195 @@ const handleGeneratePdf =
     );
   }
 
-  return (
-    <div className="bg-gray-100 min-h-screen p-6">
-      <h1 className="text-3xl font-bold mb-6">
-        Document Viewer
-      </h1>
+ return (
+  <div className="bg-gray-100 min-h-screen p-6">
+    <h1 className="text-3xl font-bold mb-6">
+      Document Viewer
+    </h1>
 
-      <div className="flex gap-6">
-        {/* PDF Viewer */}
-        <div className="flex-1 bg-white rounded-lg shadow p-4 relative overflow-auto">
-          <Document
-            file={
-              documentData.file_url
+    <div className="flex gap-6">
+      {/* PDF Viewer */}
+      <div className="flex-1 bg-white rounded-lg shadow p-4 relative overflow-auto">
+        <Document
+          file={
+            documentData.file_url
+          }
+          onLoadSuccess={
+            onDocumentLoadSuccess
+          }
+        >
+          {Array.from(
+            new Array(
+              numPages || 0
+            ),
+            (_, index) => (
+              <Page
+                key={index}
+                pageNumber={
+                  index + 1
+                }
+                className="mb-4"
+              />
+            )
+          )}
+        </Document>
+
+        <DndContext
+          onDragEnd={
+            handleDragEnd
+          }
+        >
+          {signatures.map(
+            (
+              signature
+            ) => (
+              <DraggableField
+                key={
+                  signature.id
+                }
+                id={
+                  signature.id
+                }
+                label={getLabel(
+                  signature.type
+                )}
+                image={
+                  signature.image
+                }
+                x={
+                  signature.x
+                }
+                y={
+                  signature.y
+                }
+              />
+            )
+          )}
+        </DndContext>
+
+        {/* Buttons */}
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            onClick={
+              handleFinalizePdf
             }
-            onLoadSuccess={
-              onDocumentLoadSuccess
-            }
+            className="bg-green-600 text-white px-5 py-2 rounded-lg"
           >
-            {Array.from(
-              new Array(
-                numPages || 0
-              ),
-              (_, index) => (
-                <Page
-                  key={index}
-                  pageNumber={
-                    index + 1
-                  }
-                  className="mb-4"
-                />
-              )
-            )}
-          </Document>
+            Finalize PDF
+          </button>
 
-          <DndContext
-            onDragEnd={
-              handleDragEnd
+          <button
+            onClick={
+              handleGeneratePdf
             }
+            className="bg-blue-600 text-white px-5 py-2 rounded-lg"
           >
-            {signatures.map(
-              (
-                signature
-              ) => (
-                <DraggableField
-                  key={
-                    signature.id
-                  }
-                  id={
-                    signature.id
-                  }
-                  label={getLabel(
-                    signature.type
-                  )}
-                  image={
-                    signature.image
-                  }
-                  x={
-                    signature.x
-                  }
-                  y={
-                    signature.y
-                  }
-                />
-              )
-            )}
-          </DndContext>
+            Generate Signed PDF
+          </button>
 
-          <div className="mt-6">
-            <button
-  onClick={() => {
-    alert("Button Clicked");
-    handleFinalizePdf();
-  }}
-  className="bg-green-600 text-white px-5 py-2 rounded-lg"
->
-  Finalize PDF
-</button>
-<button
-  onClick={handleGeneratePdf}
-  className="bg-blue-600 text-white px-5 py-2 rounded-lg ml-3"
->
-  Download Signed PDF
-</button>
-<button
-  onClick={
-    handleGeneratePdf
-  }
-  className="bg-blue-600 text-white px-5 py-2 rounded-lg ml-3"
->
-  Generate Signed PDF
-</button>
-          </div>
+          <button
+            onClick={
+              handleViewAudit
+            }
+            className="bg-purple-600 text-white px-5 py-2 rounded-lg"
+          >
+            Audit Trail
+          </button>
         </div>
 
-        {/* Right Side Panel */}
-    <SignaturePanel
-  addSignature={addSignature}
-  inviteSigner={handleInviteSigner}
-/>
+        {/* Audit Logs */}
+        {auditLogs.length >
+          0 && (
+          <div className="mt-6 bg-gray-50 border rounded-lg p-4">
+            <h2 className="text-xl font-bold mb-4">
+              Audit Trail
+            </h2>
+
+            {auditLogs.map(
+              (
+                log
+              ) => (
+                <div
+                  key={
+                    log.id
+                  }
+                  className="border-b py-3"
+                >
+                  <p>
+                    <strong>
+                      Action:
+                    </strong>{" "}
+                    {
+                      log.action
+                    }
+                  </p>
+
+                  <p>
+                    <strong>
+                      Email:
+                    </strong>{" "}
+                    {
+                      log.actor_email
+                    }
+                  </p>
+
+                  <p>
+                    <strong>
+                      IP:
+                    </strong>{" "}
+                    {
+                      log.ip_address
+                    }
+                  </p>
+
+                  <p>
+                    <strong>
+                      User Agent:
+                    </strong>{" "}
+                    {
+                      log.user_agent
+                    }
+                  </p>
+
+                  <p>
+                    <strong>
+                      Time:
+                    </strong>{" "}
+                    {new Date(
+                      log.created_at
+                    ).toLocaleString()}
+                  </p>
+                </div>
+              )
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Signature Modal */}
-      {showModal && (
-        <SignatureModal
-          onSave={
-            handleSignatureSave
-          }
-          onClose={() =>
-            setShowModal(false)
-          }
-        />
-      )}
+      {/* Right Side Panel */}
+      <SignaturePanel
+        addSignature={
+          addSignature
+        }
+        inviteSigner={
+          handleInviteSigner
+        }
+      />
     </div>
-  );
+
+    {/* Signature Modal */}
+    {showModal && (
+      <SignatureModal
+        onSave={
+          handleSignatureSave
+        }
+        onClose={() =>
+          setShowModal(false)
+        }
+      />
+    )}
+  </div>
+);
 };
 
 export default DocumentViewer;

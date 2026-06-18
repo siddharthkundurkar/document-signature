@@ -10,6 +10,7 @@ import Register from "./auth/Register";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./ProtectedRoute";
 import DocumentViewer from "./pages/DocumentViewer";
+import PublicSigner from "./pages/PublicSigner";
 const App = () => {
   return (
     <BrowserRouter>
@@ -37,6 +38,10 @@ const App = () => {
         <Route
   path="/document/:id"
   element={<DocumentViewer />}
+/>
+        <Route
+  path="/sign/:token"
+  element={<PublicSigner />}
 />
       </Routes>
     </BrowserRouter>

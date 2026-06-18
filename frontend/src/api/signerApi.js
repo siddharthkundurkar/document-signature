@@ -25,3 +25,16 @@ export const inviteSigner =
       }
     );
   };
+  export const getDocumentByToken = (
+  token
+) => {
+  return API.get(`/${token}`);
+};
+
+export const completeSigning = (
+  token
+) => {
+  return API.post(
+    `/${token}/complete`
+  );
+};
