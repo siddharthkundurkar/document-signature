@@ -1,18 +1,36 @@
-const express = require("express");
+const express =
+  require("express");
 
-const router = express.Router();
-
-const authMiddleware =
-  require("../middleware/authMiddleware");
+const router =
+  express.Router();
 
 const {
   inviteSigner,
-} = require("../controllers/signer.controller");
+  getDocumentByToken,
+  completeSigning,
+} = require(
+  "../controllers/signer.controller"
+);
+
+const authMiddleware =
+  require(
+    "../middleware//authMiddleware.js"
+  );
 
 router.post(
   "/invite",
   authMiddleware,
   inviteSigner
+);
+
+router.get(
+  "/:token",
+  getDocumentByToken
+);
+
+router.post(
+  "/complete/:token",
+  completeSigning
 );
 
 module.exports = router;

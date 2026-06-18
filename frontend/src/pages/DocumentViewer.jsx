@@ -21,6 +21,7 @@ import {
   getDocumentById,
   
 } from "../api/documentApi";
+import { generateSignedPdf} from "../api/pdfApi";
 import { inviteSigner } from "../api/signerApi";
 import  { saveSignature } from "../api/signatureApi";
 import SignaturePanel from "../components/SignaturePanel";
@@ -228,6 +229,53 @@ const handleFinalizePdf = async () => {
     );
   }
 };
+const handleGeneratePdf =
+  async () => {
+    try {
+      const token =
+        localStorage.getItem(
+          "token"
+        );
+
+      const response =
+        await generateSignedPdf(
+          id,
+          token
+        );
+
+      console.log(
+        "PDF RESPONSE:",
+        response.data
+      );
+
+      if (
+        response.data
+          .signedPdfUrl
+      ) {
+        window.open(
+          response.data
+            .signedPdfUrl,
+          "_blank"
+        );
+
+        alert(
+          "Signed PDF generated successfully"
+        );
+      } else {
+        alert(
+          "No PDF URL returned"
+        );
+      }
+    } catch (error) {
+      console.log(error);
+
+      alert(
+        error.response?.data
+          ?.error ||
+          "Failed to generate PDF"
+      );
+    }
+  };
   if (!documentData) {
     return (
       <div className="p-8">
@@ -311,6 +359,20 @@ const handleFinalizePdf = async () => {
   className="bg-green-600 text-white px-5 py-2 rounded-lg"
 >
   Finalize PDF
+</button>
+<button
+  onClick={handleGeneratePdf}
+  className="bg-blue-600 text-white px-5 py-2 rounded-lg ml-3"
+>
+  Download Signed PDF
+</button>
+<button
+  onClick={
+    handleGeneratePdf
+  }
+  className="bg-blue-600 text-white px-5 py-2 rounded-lg ml-3"
+>
+  Generate Signed PDF
 </button>
           </div>
         </div>

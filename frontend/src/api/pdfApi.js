@@ -6,19 +6,15 @@ const API =
       "http://localhost:5000/api/pdf",
   });
 
-export const generatePdf =
+export const generateSignedPdf =
   (
     documentId,
     token
   ) => {
     return API.post(
       "/generate",
+      { documentId },
       {
-        documentId,
-      },
-      {
-        responseType:
-          "blob",
         headers: {
           Authorization:
             `Bearer ${token}`,

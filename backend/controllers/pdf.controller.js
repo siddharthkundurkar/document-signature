@@ -1,12 +1,10 @@
 const { PDFDocument } =
   require("pdf-lib");
 
-const fetch = require("node-fetch");
-
 const supabase =
   require("../config/supabse");
 
-  const generateSignedPdf =
+const generateSignedPdf =
   async (req, res) => {
     try {
       const { documentId } =
@@ -15,15 +13,20 @@ const supabase =
       // Get document
       const {
         data: document,
+        error: documentError,
       } = await supabase
         .from("documents")
         .select("*")
         .eq("id", documentId)
         .single();
 
+      if (documentError)
+        throw documentError;
+
       // Get signatures
       const {
         data: signatures,
+        error: signatureError,
       } = await supabase
         .from("signatures")
         .select("*")
@@ -32,18 +35,24 @@ const supabase =
           documentId
         );
 
-      const pdfBytes =
+      if (signatureError)
+        throw signatureError;
+
+      // Download original PDF
+      const pdfResponse =
         await fetch(
           document.file_url
-        ).then((res) =>
-          res.arrayBuffer()
         );
+
+      const pdfBytes =
+        await pdfResponse.arrayBuffer();
 
       const pdfDoc =
         await PDFDocument.load(
           pdfBytes
         );
 
+      // Add signatures
       for (const sig of signatures) {
         if (
           !sig.signature_image
@@ -52,7 +61,8 @@ const supabase =
 
         const page =
           pdfDoc.getPage(
-            sig.page_number - 1
+            (sig.page_number || 1) -
+              1
           );
 
         const imageBytes =
@@ -72,9 +82,13 @@ const supabase =
         page.drawImage(
           image,
           {
-            x: sig.x_position,
-            y: page.getHeight() -
-              sig.y_position -
+            x:
+              sig.x_position ||
+              100,
+            y:
+              page.getHeight() -
+              (sig.y_position ||
+                100) -
               50,
             width: 120,
             height: 50,
@@ -82,24 +96,91 @@ const supabase =
         );
       }
 
+      // Generate final PDF
       const finalPdf =
         await pdfDoc.save();
 
-      res.setHeader(
-        "Content-Type",
-        "application/pdf"
-      );
+      const pdfBuffer =
+        Buffer.from(
+          finalPdf
+        );
 
-      res.send(
-        Buffer.from(finalPdf)
-      );
+      // Upload to Supabase Storage
+      const fileName =
+        `signed-${documentId}-${Date.now()}.pdf`;
+
+      const {
+        error: uploadError,
+      } = await supabase.storage
+        .from(
+          "signed-documents"
+        )
+        .upload(
+          fileName,
+          pdfBuffer,
+          {
+            contentType:
+              "application/pdf",
+            upsert: true,
+          }
+        );
+
+      if (uploadError)
+        throw uploadError;
+
+      // Get public URL
+      const {
+        data: publicUrlData,
+      } = supabase.storage
+        .from(
+          "signed-documents"
+        )
+        .getPublicUrl(
+          fileName
+        );
+
+      const signedPdfUrl =
+        publicUrlData.publicUrl;
+
+      // Save URL in documents table
+      const {
+        error: updateError,
+      } = await supabase
+        .from("documents")
+        .update({
+          signed_pdf_url:
+            signedPdfUrl,
+        })
+        .eq(
+          "id",
+          documentId
+        );
+
+      if (updateError)
+        throw updateError;
+
+      return res
+        .status(200)
+        .json({
+          success: true,
+          signedPdfUrl,
+        });
     } catch (error) {
-      console.log(error);
+      console.log(
+        "PDF GENERATION ERROR:",
+        error
+      );
 
-      res.status(500).json({
-        error:
-          error.message,
-      });
+      return res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            error.message,
+        });
     }
   };
-  
+
+module.exports = {
+  generateSignedPdf,
+};
