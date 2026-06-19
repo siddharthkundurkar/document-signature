@@ -27,16 +27,26 @@ const getAuditHistory =
       if (error)
         throw error;
 
-      res.json({
-        success: true,
-        history: data,
-      });
+      return res
+        .status(200)
+        .json({
+          success: true,
+          history:
+            data || [],
+        });
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        error:
-          error.message,
-      });
+      console.log(
+        "AUDIT HISTORY ERROR:",
+        error
+      );
+
+      return res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            error.message,
+        });
     }
   };
 

@@ -5,8 +5,12 @@ const supabase =
   require("../config/supabse");
 
 const generateSignedPdfInternal =
-  async (documentId) => {
-    // Get document
+  async (
+    documentId,
+    auditData = {}
+  ) => {
+    // Get Document
+
     const {
       data: document,
       error: documentError,
@@ -19,7 +23,8 @@ const generateSignedPdfInternal =
     if (documentError)
       throw documentError;
 
-    // Get signatures
+    // Get Fields / Signatures
+
     const {
       data: signatures,
       error: signatureError,
@@ -34,7 +39,8 @@ const generateSignedPdfInternal =
     if (signatureError)
       throw signatureError;
 
-    // Download original PDF
+    // Download PDF
+
     const pdfResponse =
       await fetch(
         document.file_url
@@ -48,58 +54,84 @@ const generateSignedPdfInternal =
         pdfBytes
       );
 
-    // Add signatures
-    for (const sig of signatures) {
-      if (
-        !sig.signature_image
-      )
-        continue;
+    // Draw Fields
 
+    for (const sig of signatures) {
       const page =
         pdfDoc.getPage(
           (sig.page_number || 1) -
             1
         );
 
-      const imageBytes =
-        Buffer.from(
-          sig.signature_image.replace(
-            /^data:image\/png;base64,/,
-            ""
-          ),
-          "base64"
-        );
+      const x =
+        sig.x_position ||
+        100;
 
-      const image =
-        await pdfDoc.embedPng(
-          imageBytes
-        );
+      const y =
+        page.getHeight() -
+        (sig.y_position ||
+          100);
 
-      page.drawImage(
-        image,
-        {
-          x:
-            sig.x_position ||
-            100,
-          y:
-            page.getHeight() -
-            (sig.y_position ||
-              100) -
-            50,
-          width: 120,
-          height: 50,
-        }
-      );
+      // Signature Image
+
+      if (
+        sig.field_type ===
+          "signature" &&
+        sig.signature_image
+      ) {
+        const imageBytes =
+          Buffer.from(
+            sig.signature_image.replace(
+              /^data:image\/png;base64,/,
+              ""
+            ),
+            "base64"
+          );
+
+        const image =
+          await pdfDoc.embedPng(
+            imageBytes
+          );
+
+        page.drawImage(
+          image,
+          {
+            x,
+            y: y - 50,
+            width: 120,
+            height: 50,
+          }
+        );
+      }
+
+      // Name / Email / Date
+
+      else if (
+        sig.field_value
+      ) {
+        page.drawText(
+          sig.field_value,
+          {
+            x,
+            y,
+            size: 12,
+          }
+        );
+      }
     }
 
-    // Generate PDF
+    // Save PDF
+
     const finalPdf =
       await pdfDoc.save();
 
     const pdfBuffer =
-      Buffer.from(finalPdf);
+      Buffer.from(
+        finalPdf
+      );
 
-    // Upload to Supabase
+    // Upload PDF
+
     const fileName =
       `signed-${documentId}-${Date.now()}.pdf`;
 
@@ -135,33 +167,53 @@ const generateSignedPdfInternal =
     const signedPdfUrl =
       publicUrlData.publicUrl;
 
-    // Update documents table
-const { error: updateError } =
-  await supabase
-    .from("documents")
-    .update({
-      signed_pdf_url: signedPdfUrl,
-      status: "SIGNED",
-    })
-    .eq("id", documentId);
+    // Update Document
 
-if (updateError)
-  throw updateError;
+    const {
+      error: updateError,
+    } = await supabase
+      .from("documents")
+      .update({
+        signed_pdf_url:
+          signedPdfUrl,
+        status: "Signed",
+      })
+      .eq(
+        "id",
+        documentId
+      );
 
-   await supabase
-  .from("audit_logs")
-  .insert([
-    {
-      document_id:
-        documentId,
-      action:
-        "DOCUMENT_COMPLETED",
-      actor_email:
-        "Owner",
-      created_at:
-        new Date().toISOString(),
-    },
-  ]);
+    if (updateError)
+      throw updateError;
+
+    // Audit Trail
+
+    await supabase
+      .from("audit_logs")
+      .insert([
+        {
+          document_id:
+            documentId,
+
+          action:
+            "DOCUMENT_COMPLETED",
+
+          actor_email:
+            auditData.actor_email ||
+            "Owner",
+
+          ip_address:
+            auditData.ip_address ||
+            null,
+
+          user_agent:
+            auditData.user_agent ||
+            null,
+
+          created_at:
+            new Date().toISOString(),
+        },
+      ]);
 
     return signedPdfUrl;
   };
@@ -174,7 +226,24 @@ const generateSignedPdf =
 
       const signedPdfUrl =
         await generateSignedPdfInternal(
-          documentId
+          documentId,
+          {
+            actor_email:
+              req.user?.email,
+
+            ip_address:
+              req.headers[
+                "x-forwarded-for"
+              ] ||
+              req.socket
+                ?.remoteAddress ||
+              req.ip,
+
+            user_agent:
+              req.headers[
+                "user-agent"
+              ],
+          }
         );
 
       return res
