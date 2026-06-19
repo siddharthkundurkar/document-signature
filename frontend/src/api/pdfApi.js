@@ -3,7 +3,7 @@ import axios from "axios";
 const API =
   axios.create({
     baseURL:
-      "http://localhost:5000/api/pdf",
+      "https://document-signature-ual4.vercel.app/api/pdf",
   });
 
 export const generateSignedPdf =

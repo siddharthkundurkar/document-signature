@@ -18,7 +18,9 @@ const pdfRoutes =
   require("./routes/dashboard.routes.js");
 const profileRoutes =
   require("./routes/profile.routes.js");
-app.use(cors());    
+app.use(cors(
+  origin=["https://document-signature-bay.vercel.app"]
+));    
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/docs", documentRoutes);

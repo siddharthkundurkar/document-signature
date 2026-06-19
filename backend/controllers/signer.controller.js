@@ -188,7 +188,7 @@ const completeSigning =
       await supabase
         .from("documents")
         .update({
-          status: "Completed",
+          status: "Signed",
         })
         .eq(
           "id",

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api/auth",
+  baseURL: "https://document-signature-ual4.vercel.app/api/auth",
 });
 
 export const registerUser = (userData) =>

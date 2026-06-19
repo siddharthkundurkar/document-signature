@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API = axios.create({
   baseURL:
-    "http://localhost:5000/api/signers",
+    "https://document-signature-ual4.vercel.app/api/signers",
 });
 
 export const inviteSigner =

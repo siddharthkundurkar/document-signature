@@ -430,7 +430,7 @@ const handleGeneratePdf =
         className={`px-4 py-2 rounded-full text-sm font-semibold
         ${
           documentData?.status ===
-          "Completed"
+          "Signed"
             ? "bg-green-100 text-green-700"
             : documentData?.status ===
               "Rejected"

@@ -196,7 +196,7 @@ const generateSignedPdfInternal =
             documentId,
 
           action:
-            "DOCUMENT_COMPLETED",
+            "DOCUMENT_SIGNED",
 
           actor_email:
             auditData.actor_email ||

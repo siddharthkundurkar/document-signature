@@ -31,7 +31,7 @@ const Dashboard = () => {
     useState({
       totalDocs: 0,
       pendingDocs: 0,
-      completedDocs: 0,
+      signedDocs: 0,
       rejectedDocs: 0,
       completionRate: 0,
     });
@@ -200,11 +200,11 @@ setStats(response.data);
 
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-semibold">
-              Completed
+              Signed
             </h3>
 
             <p className="text-3xl font-bold text-green-600">
-              {stats.completedDocs}
+              {stats.signedDocs}
             </p>
           </div>
 
@@ -293,7 +293,7 @@ setStats(response.data);
                           className={`px-2 py-1 text-xs rounded-full
                           ${
                             doc.status ===
-                            "Completed"
+                            "Signed"
                               ? "bg-green-100 text-green-700"
                               : doc.status ===
                                 "Rejected"

@@ -24,14 +24,14 @@ const getDashboardStats =
         .eq("status", "Pending");
 
       const {
-        count: completedDocs,
+        count: signedDocs,
       } = await supabase
         .from("documents")
         .select("*", {
           count: "exact",
           head: true,
         })
-        .eq("status", "Completed");
+        .eq("status", "Signed");
 
       const {
         count: rejectedDocs,
@@ -46,7 +46,7 @@ const getDashboardStats =
       const completionRate =
         totalDocs > 0
           ? Math.round(
-              (completedDocs /
+              (signedDocs /
                 totalDocs) *
                 100
             )
@@ -55,7 +55,7 @@ const getDashboardStats =
       res.json({
         totalDocs,
         pendingDocs,
-        completedDocs,
+        signedDocs,
         rejectedDocs,
         completionRate,
       });
