@@ -38,3 +38,16 @@ export const completeSigning = (
     `/${token}/complete`
   );
 };
+
+export const rejectSigning =
+  (
+    token,
+    reason
+  ) => {
+    return API.post(
+      `/${token}/reject`,
+      {
+        reason,
+      }
+    );
+  };

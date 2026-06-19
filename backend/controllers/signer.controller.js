@@ -246,9 +246,60 @@ const completeSigning =
       });
     }
   };
+const rejectSigning =
+  async (req, res) => {
+    try {
+      const { token } =
+        req.params;
 
+      const { reason } =
+        req.body;
+
+      const {
+        data: signer,
+        error,
+      } = await supabase
+        .from("signer_links")
+        .select("*")
+        .eq("token", token)
+        .single();
+
+      if (error)
+        throw error;
+
+      await supabase
+        .from("signer_links")
+        .update({
+          status: "rejected",
+          rejection_reason:
+            reason,
+        })
+        .eq("token", token);
+
+      await supabase
+        .from("documents")
+        .update({
+          status: "Rejected",
+        })
+        .eq(
+          "id",
+          signer.document_id
+        );
+
+      res.json({
+        success: true,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error:
+          error.message,
+      });
+    }
+  };
 module.exports = {
   inviteSigner,
   getDocumentByToken,
   completeSigning,
+  rejectSigning,
 };

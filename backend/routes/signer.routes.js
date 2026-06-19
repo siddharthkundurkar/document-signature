@@ -8,6 +8,7 @@ const {
   inviteSigner,
   getDocumentByToken,
   completeSigning,
+  rejectSigning,
 } = require(
   "../controllers/signer.controller"
 );
@@ -38,5 +39,8 @@ router.post(
   captureIp,
   completeSigning
 );
-
+router.post(
+  "/:token/reject",
+  rejectSigning
+);
 module.exports = router;

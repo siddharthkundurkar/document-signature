@@ -16,6 +16,7 @@ import {
 import {
   getDocumentByToken,
   completeSigning,
+  rejectSigning,
 } from "../api/signerApi";
 
 import SignatureModal from "../components/SignatureModal";
@@ -30,21 +31,30 @@ const PublicSigner = () => {
   const { token } =
     useParams();
 
-  const [documentData,
-    setDocumentData] =
-    useState(null);
+  const [
+    documentData,
+    setDocumentData,
+  ] = useState(null);
 
-  const [showModal,
-    setShowModal] =
-    useState(false);
+  const [
+    showModal,
+    setShowModal,
+  ] = useState(false);
 
-  const [signature,
-    setSignature] =
-    useState(null);
+  const [
+    signature,
+    setSignature,
+  ] = useState(null);
 
-  const [numPages,
-    setNumPages] =
-    useState(null);
+  const [
+    numPages,
+    setNumPages,
+  ] = useState(null);
+
+  const [
+    rejectionReason,
+    setRejectionReason,
+  ] = useState("");
 
   useEffect(() => {
     loadDocument();
@@ -68,15 +78,33 @@ const PublicSigner = () => {
 
   const handleSave =
     (image) => {
+      console.log(
+        "IMAGE GENERATED"
+      );
+
       setSignature(image);
+
       setShowModal(false);
     };
 
   const handleComplete =
     async () => {
       try {
-        await completeSigning(
-          token
+        if (!signature) {
+          alert(
+            "Please draw your signature first"
+          );
+
+          return;
+        }
+
+        const response =
+          await completeSigning(
+            token
+          );
+
+        console.log(
+          response.data
         );
 
         alert(
@@ -84,11 +112,58 @@ const PublicSigner = () => {
         );
       } catch (error) {
         console.log(error);
+
+        alert(
+          error.response?.data
+            ?.error ||
+            "Failed to sign document"
+        );
+      }
+    };
+
+  const handleReject =
+    async () => {
+      try {
+        if (
+          !rejectionReason
+        ) {
+          alert(
+            "Please enter rejection reason"
+          );
+
+          return;
+        }
+
+        const response =
+          await rejectSigning(
+            token,
+            rejectionReason
+          );
+
+        console.log(
+          response.data
+        );
+
+        alert(
+          "Document rejected successfully"
+        );
+      } catch (error) {
+        console.log(error);
+
+        alert(
+          error.response?.data
+            ?.error ||
+            "Failed to reject document"
+        );
       }
     };
 
   if (!documentData) {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -119,20 +194,47 @@ const PublicSigner = () => {
               pageNumber={
                 index + 1
               }
+              className="mb-4"
             />
           )
         )}
       </Document>
 
       {signature && (
-        <img
-          src={signature}
-          alt="signature"
-          className="w-48 mt-4 border"
-        />
+        <div className="mt-4">
+          <p className="font-semibold">
+            Signature Preview
+          </p>
+
+          <img
+            src={signature}
+            alt="signature"
+            className="w-48 border mt-2"
+          />
+        </div>
       )}
 
-      <div className="mt-4 flex gap-3">
+      <div className="mt-6">
+        <label className="block font-semibold mb-2">
+          Rejection Reason
+        </label>
+
+        <textarea
+          value={
+            rejectionReason
+          }
+          onChange={(e) =>
+            setRejectionReason(
+              e.target.value
+            )
+          }
+          placeholder="Enter reason if rejecting document"
+          className="w-full border rounded p-2"
+          rows={4}
+        />
+      </div>
+
+      <div className="mt-6 flex gap-3">
         <button
           onClick={() =>
             setShowModal(true)
@@ -149,6 +251,15 @@ const PublicSigner = () => {
           className="bg-blue-600 text-white px-4 py-2 rounded"
         >
           Complete Signing
+        </button>
+
+        <button
+          onClick={
+            handleReject
+          }
+          className="bg-red-600 text-white px-4 py-2 rounded"
+        >
+          Reject Document
         </button>
       </div>
 
