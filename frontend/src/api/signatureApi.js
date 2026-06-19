@@ -46,3 +46,32 @@ export const saveSignature =
       }
     );
   };
+  export const saveMySignature = (
+  signatureImage,
+  token
+) => {
+  return API.post(
+    "/save-my-signature",
+    {
+      signatureImage,
+    },
+    {
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  );
+};
+  export const getMySignatures =
+  (token) => {
+    return API.get(
+      "/my-signatures",
+      {
+        headers: {
+          Authorization:
+            `Bearer ${token}`,
+        },
+      }
+    );
+  };

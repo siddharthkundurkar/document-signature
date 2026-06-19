@@ -24,7 +24,8 @@ import {
 import { generateSignedPdf} from "../api/pdfApi";
 import { inviteSigner } from "../api/signerApi";
 import { getAuditHistory } from "../api/auditApi";
-import  { saveSignature } from "../api/signatureApi";
+import  { saveMySignature } from "../api/signatureApi";
+import { saveSignature } from "../api/signatureApi";
 import SignaturePanel from "../components/SignaturePanel";
 import DraggableField from "../components/DraggableField";
 import SignatureModal from "../components/SignatureModal";
@@ -131,11 +132,14 @@ const handleViewAudit =
     ]);
   };
 
-  const handleSignatureSave = (image) => {
-  console.log("SIGNATURE RECEIVED");
-  console.log(image);
-
+ const handleSignatureSave = async (
+  image
+) => {
   setShowModal(false);
+
+  await saveCurrentSignature(
+    image
+  );
 
   setSignatures((prev) => [
     ...prev,
@@ -261,6 +265,69 @@ const handleFinalizePdf = async () => {
     );
   }
 };
+const useSavedSignature =
+  (image) => {
+    setSignatures(
+      (prev) => [
+        ...prev,
+        {
+          id:
+            Date.now().toString(),
+          type:
+            "signature",
+          image,
+          x: 100,
+          y: 100,
+        },
+      ]
+    );
+  };
+ const useSavedField = ({
+  type,
+  value,
+}) => {
+  setSignatures((prev) => [
+    ...prev,
+    {
+      id: Date.now().toString(),
+      type,
+      value,
+      x: 100,
+      y: 100,
+    },
+  ]);
+};
+
+const saveCurrentSignature =
+  async (image) => {
+    try {
+      const token =
+        localStorage.getItem(
+          "token"
+        );
+
+      const response =
+        await saveMySignature(
+          image,
+          token
+        );
+
+      console.log(
+        "SIGNATURE SAVED:",
+        response.data
+      );
+
+      alert(
+        "Signature saved successfully"
+      );
+    } catch (error) {
+      console.log(error);
+
+      alert(
+        "Failed to save signature"
+      );
+    }
+  };
 const handleGeneratePdf =
   async () => {
     try {
@@ -269,7 +336,42 @@ const handleGeneratePdf =
           "token"
         );
 
-      const response =
+      // STEP 1:
+      // Save all fields/signatures first
+
+      console.log(
+        "FINALIZING PDF..."
+      );
+
+      for (const sig of signatures) {
+        const response =
+          await saveSignature(
+            id,
+            sig.x,
+            sig.y,
+            1,
+            token,
+            sig.type,
+            sig.image ||
+              null,
+            sig.value ||
+              null
+          );
+
+        console.log(
+          "SAVE RESPONSE:",
+          response.data
+        );
+      }
+
+      console.log(
+        "ALL SIGNATURES SAVED"
+      );
+
+      // STEP 2:
+      // Generate signed PDF
+
+      const pdfResponse =
         await generateSignedPdf(
           id,
           token
@@ -277,15 +379,15 @@ const handleGeneratePdf =
 
       console.log(
         "PDF RESPONSE:",
-        response.data
+        pdfResponse.data
       );
 
       if (
-        response.data
+        pdfResponse.data
           .signedPdfUrl
       ) {
         window.open(
-          response.data
+          pdfResponse.data
             .signedPdfUrl,
           "_blank"
         );
@@ -304,6 +406,7 @@ const handleGeneratePdf =
       alert(
         error.response?.data
           ?.error ||
+          error.message ||
           "Failed to generate PDF"
       );
     }
@@ -339,8 +442,7 @@ const handleGeneratePdf =
           "Pending"}
       </span>
     </div>
-
-    <div className="flex gap-6">
+<div className="flex gap-6 items-start">
       {/* PDF Viewer */}
       <div className="flex-1 bg-white rounded-lg shadow p-4 relative overflow-auto">
         <Document
@@ -376,40 +478,24 @@ const handleGeneratePdf =
             (
               signature
             ) => (
-              <DraggableField
-                key={
-                  signature.id
-                }
-                id={
-                  signature.id
-                }
-                label={getLabel(
-                  signature.type
-                )}
-                image={
-                  signature.image
-                }
-                x={
-                  signature.x
-                }
-                y={
-                  signature.y
-                }
-              />
+            <DraggableField
+  key={signature.id}
+  id={signature.id}
+  label={getLabel(
+    signature.type
+  )}
+  image={signature.image}
+  value={signature.value}
+  x={signature.x}
+  y={signature.y}
+/>
             )
           )}
         </DndContext>
 
         {/* Buttons */}
         <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            onClick={
-              handleFinalizePdf
-            }
-            className="bg-green-600 text-white px-5 py-2 rounded-lg"
-          >
-            Finalize PDF
-          </button>
+         
 
           <button
             onClick={
@@ -500,14 +586,16 @@ const handleGeneratePdf =
       </div>
 
       {/* Right Side Panel */}
-      <SignaturePanel
-        addSignature={
-          addSignature
-        }
-        inviteSigner={
-          handleInviteSigner
-        }
-      />
+  <SignaturePanel
+  addSignature={addSignature}
+  inviteSigner={handleInviteSigner}
+  useSavedSignature={
+    useSavedSignature
+  }
+  useSavedField={
+    useSavedField
+  }
+/>
     </div>
 
     {/* Signature Modal */}

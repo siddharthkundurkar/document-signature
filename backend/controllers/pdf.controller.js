@@ -136,21 +136,32 @@ const generateSignedPdfInternal =
       publicUrlData.publicUrl;
 
     // Update documents table
-    const {
-      error: updateError,
-    } = await supabase
-      .from("documents")
-      .update({
-        signed_pdf_url:
-          signedPdfUrl,
-      })
-      .eq(
-        "id",
-        documentId
-      );
+const { error: updateError } =
+  await supabase
+    .from("documents")
+    .update({
+      signed_pdf_url: signedPdfUrl,
+      status: "SIGNED",
+    })
+    .eq("id", documentId);
 
-    if (updateError)
-      throw updateError;
+if (updateError)
+  throw updateError;
+
+   await supabase
+  .from("audit_logs")
+  .insert([
+    {
+      document_id:
+        documentId,
+      action:
+        "DOCUMENT_COMPLETED",
+      actor_email:
+        "Owner",
+      created_at:
+        new Date().toISOString(),
+    },
+  ]);
 
     return signedPdfUrl;
   };

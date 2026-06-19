@@ -1,6 +1,6 @@
-
 import { useRef } from "react";
 import SignatureCanvas from "react-signature-canvas";
+import { saveMySignature } from "../api/signatureApi";
 
 const SignatureModal = ({
   onSave,
@@ -8,37 +8,45 @@ const SignatureModal = ({
 }) => {
   const sigRef = useRef(null);
 
-  const handleSave = () => {
-    console.log("SAVE CLICKED");
+  const handleSave = async () => {
+    try {
+      if (!sigRef.current) return;
 
-    if (!sigRef.current) return;
+      if (sigRef.current.isEmpty()) {
+        alert("Please draw a signature first");
+        return;
+      }
 
-    if (sigRef.current.isEmpty()) {
-      alert("Please draw a signature first");
-      return;
+      const image =
+        sigRef.current
+          .getCanvas()
+          .toDataURL("image/png");
+
+      const token =
+        localStorage.getItem("token");
+
+      // Save permanently
+      await saveMySignature(
+        image,
+        token
+      );
+
+      // Send back to parent
+      onSave(image);
+
+      alert(
+        "Signature saved successfully"
+      );
+    } catch (error) {
+      console.log(error);
+      alert(
+        "Failed to save signature"
+      );
     }
-
-    const image =
-      sigRef.current
-        .getCanvas()
-        .toDataURL("image/png");
-
-    console.log("IMAGE GENERATED");
-
-    onSave(image);
   };
 
   const handleClear = () => {
-    console.log("CLEAR CLICKED");
-
-    if (sigRef.current) {
-      sigRef.current.clear();
-    }
-  };
-
-  const handleClose = () => {
-    console.log("CLOSE CLICKED");
-    onClose();
+    sigRef.current?.clear();
   };
 
   return (
@@ -55,13 +63,14 @@ const SignatureModal = ({
             canvasProps={{
               width: 600,
               height: 250,
+              className:
+                "signature-canvas",
             }}
           />
         </div>
 
         <div className="flex gap-3 mt-4">
           <button
-            type="button"
             onClick={handleClear}
             className="bg-gray-500 text-white px-4 py-2 rounded"
           >
@@ -69,7 +78,6 @@ const SignatureModal = ({
           </button>
 
           <button
-            type="button"
             onClick={handleSave}
             className="bg-green-600 text-white px-4 py-2 rounded"
           >
@@ -77,8 +85,7 @@ const SignatureModal = ({
           </button>
 
           <button
-            type="button"
-            onClick={handleClose}
+            onClick={onClose}
             className="bg-red-600 text-white px-4 py-2 rounded"
           >
             Close
