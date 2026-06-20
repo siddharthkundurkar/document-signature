@@ -1,49 +1,66 @@
-import { useRef } from "react";
+
 import SignatureCanvas from "react-signature-canvas";
 import { saveMySignature } from "../api/signatureApi";
+import { useRef, useState } from "react";
 
 const SignatureModal = ({
   onSave,
   onClose,
 }) => {
   const sigRef = useRef(null);
+const [saving, setSaving] =
+  useState(false);
+ const handleSave = async () => {
+  if (saving) return;
 
-  const handleSave = async () => {
-    try {
-      if (!sigRef.current) return;
+  try {
+    setSaving(true);
 
-      if (sigRef.current.isEmpty()) {
-        alert("Please draw a signature first");
-        return;
-      }
+    if (!sigRef.current)
+      return;
 
-      const image =
-        sigRef.current
-          .getCanvas()
-          .toDataURL("image/png");
-
-      const token =
-        localStorage.getItem("token");
-
-      // Save permanently
-      await saveMySignature(
-        image,
-        token
-      );
-
-      // Send back to parent
-      onSave(image);
-
+    if (
+      sigRef.current.isEmpty()
+    ) {
       alert(
-        "Signature saved successfully"
+        "Please draw a signature first"
       );
-    } catch (error) {
-      console.log(error);
-      alert(
-        "Failed to save signature"
-      );
+      setSaving(false);
+      return;
     }
-  };
+
+    const image =
+      sigRef.current
+        .getCanvas()
+        .toDataURL(
+          "image/png"
+        );
+
+    const token =
+      localStorage.getItem(
+        "token"
+      );
+
+    await saveMySignature(
+      image,
+      token
+    );
+
+    onSave(image);
+
+    alert(
+      "Signature saved successfully"
+    );
+  } catch (error) {
+    console.log(error);
+
+    alert(
+      "Failed to save signature"
+    );
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleClear = () => {
     sigRef.current?.clear();
@@ -77,12 +94,19 @@ const SignatureModal = ({
             Clear
           </button>
 
-          <button
-            onClick={handleSave}
-            className="bg-green-600 text-white px-4 py-2 rounded"
-          >
-            Save
-          </button>
+         <button
+  onClick={handleSave}
+  disabled={saving}
+  className={`px-4 py-2 rounded text-white ${
+    saving
+      ? "bg-gray-400 cursor-not-allowed"
+      : "bg-green-600"
+  }`}
+>
+  {saving
+    ? "Saving..."
+    : "Save"}
+</button>
 
           <button
             onClick={onClose}

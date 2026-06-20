@@ -131,15 +131,10 @@ const handleViewAudit =
       },
     ]);
   };
-
- const handleSignatureSave = async (
+const handleSignatureSave = (
   image
 ) => {
   setShowModal(false);
-
-  await saveCurrentSignature(
-    image
-  );
 
   setSignatures((prev) => [
     ...prev,
@@ -328,16 +323,21 @@ const saveCurrentSignature =
       );
     }
   };
+const [generating, setGenerating] =
+  useState(false);
+
 const handleGeneratePdf =
   async () => {
+
+    if (generating) return;
+
     try {
+      setGenerating(true);
+
       const token =
         localStorage.getItem(
           "token"
         );
-
-      // STEP 1:
-      // Save all fields/signatures first
 
       console.log(
         "FINALIZING PDF..."
@@ -352,10 +352,8 @@ const handleGeneratePdf =
             1,
             token,
             sig.type,
-            sig.image ||
-              null,
-            sig.value ||
-              null
+            sig.image || null,
+            sig.value || null
           );
 
         console.log(
@@ -367,9 +365,6 @@ const handleGeneratePdf =
       console.log(
         "ALL SIGNATURES SAVED"
       );
-
-      // STEP 2:
-      // Generate signed PDF
 
       const pdfResponse =
         await generateSignedPdf(
@@ -384,7 +379,7 @@ const handleGeneratePdf =
 
       if (
         pdfResponse.data
-          .signedPdfUrl
+          ?.signedPdfUrl
       ) {
         window.open(
           pdfResponse.data
@@ -409,6 +404,8 @@ const handleGeneratePdf =
           error.message ||
           "Failed to generate PDF"
       );
+    } finally {
+      setGenerating(false);
     }
   };
   if (!documentData) {
@@ -496,15 +493,19 @@ const handleGeneratePdf =
         {/* Buttons */}
         <div className="mt-6 flex flex-wrap gap-3">
          
-
-          <button
-            onClick={
-              handleGeneratePdf
-            }
-            className="bg-blue-600 text-white px-5 py-2 rounded-lg"
-          >
-            Generate Signed PDF
-          </button>
+<button
+  onClick={handleGeneratePdf}
+  disabled={generating}
+  className={`px-5 py-2 rounded-lg text-white ${
+    generating
+      ? "bg-gray-400 cursor-not-allowed"
+      : "bg-blue-600"
+  }`}
+>
+  {generating
+    ? "Generating..."
+    : "Generate Signed PDF"}
+</button>
 
           <button
             onClick={

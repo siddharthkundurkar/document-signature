@@ -58,7 +58,7 @@ const inviteSigner =
         );
 
       const signingLink =
-        `http://localhost:5173/sign/${token}`;
+        `https://document-signature-bay.vercel.app/sign/${token}`;
 
       const transporter =
         nodemailer.createTransport({
